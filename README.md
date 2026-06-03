@@ -10,9 +10,15 @@ A Flask web app for summarizing long documents with:
 ## Features
 
 - Web UI for inputting long text and selecting domain
+- File upload support for PDF, DOCX, and TXT
 - Adjustable summary style: short, medium, detailed
+- Compare lengths mode (generate short, medium, and detailed summaries together)
 - Optional bullet-point summary format
 - Automatic fallback to transformer summarization if provider call fails
+- Provider priority routing with retry/backoff controls
+- API protection with request size limits and rate limiting
+- Real-time processing status with chunk progress updates
+- One-click copy and download for generated summaries
 
 ## Project Structure
 
@@ -33,6 +39,8 @@ A Flask web app for summarizing long documents with:
    - `LLM_PROVIDER` as one of `openai`, `groq`, `gemini`
    - Matching API key for the selected provider
    - Optional domain model IDs for your provider
+   - Optional routing/retry controls: `LLM_PROVIDER_PRIORITY`, `LLM_MAX_RETRIES`, `LLM_RETRY_BACKOFF_SECONDS`
+   - Optional API safety controls: `MAX_CONTENT_LENGTH_BYTES`, `MAX_INPUT_CHARS`, `DEFAULT_RATE_LIMIT`, `SUMMARIZE_RATE_LIMIT`
 4. Run the app:
    ```bash
    flask --app app run --debug
@@ -67,6 +75,19 @@ Optional domain overrides are available for each provider:
 
 The app automatically selects the matching domain model when set.
 
+## Reliability and Safety
+
+- Provider failover order can be configured using `LLM_PROVIDER_PRIORITY`.
+- Each provider can be retried with exponential backoff controls.
+- Requests are guarded by payload size limits and rate limits.
+- Long-document transformer fallback uses chunked summarization to avoid model index errors.
+
+## Running Tests
+
+```bash
+pytest -q
+```
+
 ## API Endpoint
 
 `POST /summarize`
@@ -90,3 +111,8 @@ Response JSON:
    "engine": "groq:llama-3.1-8b-instant"
 }
 ```
+
+## Screenshots
+![alt text](image.png)
+
+![alt text](image-1.png)

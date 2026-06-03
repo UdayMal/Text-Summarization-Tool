@@ -1,4 +1,6 @@
 import os
+import time
+from functools import lru_cache
 from typing import Dict, List
 
 from dotenv import load_dotenv
@@ -39,6 +41,24 @@ LENGTH_INSTRUCTIONS = {
 
 def _get_provider() -> str:
     return os.getenv("LLM_PROVIDER", "openai").strip().lower()
+
+
+def _get_provider_priority() -> List[str]:
+    configured = os.getenv("LLM_PROVIDER_PRIORITY", "").strip().lower()
+    supported = {"openai", "groq", "gemini"}
+
+    if configured:
+        parsed = [p.strip() for p in configured.split(",") if p.strip()]
+        priority = [p for p in parsed if p in supported]
+        if priority:
+            return priority
+
+    provider = _get_provider()
+    if provider in supported:
+        return [provider]
+
+    # Auto/default mode: try free-tier friendly providers first.
+    return ["gemini", "groq", "openai"]
 
 
 def _get_model_by_domain(provider: str) -> Dict[str, str]:
@@ -86,8 +106,14 @@ def _build_user_prompt(text: str, domain: str, length: str, output_format: str) 
     )
 
 
-def summarize_with_llm(text: str, domain: str, length: str, output_format: str) -> Dict[str, str]:
-    provider = _get_provider()
+def summarize_with_provider(
+    provider: str,
+    text: str,
+    domain: str,
+    length: str,
+    output_format: str,
+) -> Dict[str, str]:
+    request_timeout = max(10.0, float(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", "90")))
     model_by_domain = _get_model_by_domain(provider)
     model = model_by_domain.get(domain, model_by_domain["general"])
     system_prompt = DOMAIN_PROMPTS.get(domain, DOMAIN_PROMPTS["general"])
@@ -102,6 +128,7 @@ def summarize_with_llm(text: str, domain: str, length: str, output_format: str) 
         response = client.chat.completions.create(
             model=model,
             temperature=0.2,
+            timeout=request_timeout,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
@@ -118,7 +145,10 @@ def summarize_with_llm(text: str, domain: str, length: str, output_format: str) 
         genai.configure(api_key=api_key)
         gemini_model = genai.GenerativeModel(model)
         prompt = f"{system_prompt}\n\n{user_prompt}"
-        response = gemini_model.generate_content(prompt)
+        response = gemini_model.generate_content(
+            prompt,
+            request_options={"timeout": request_timeout},
+        )
         summary = (response.text or "").strip()
         if not summary:
             raise ValueError("Gemini returned an empty summary.")
@@ -133,6 +163,7 @@ def summarize_with_llm(text: str, domain: str, length: str, output_format: str) 
     response = client.chat.completions.create(
         model=model,
         temperature=0.2,
+        timeout=request_timeout,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -143,12 +174,17 @@ def summarize_with_llm(text: str, domain: str, length: str, output_format: str) 
     return {"summary": summary, "engine": f"openai:{model}"}
 
 
-def summarize_with_transformer(text: str, length: str, output_format: str) -> Dict[str, str]:
+@lru_cache(maxsize=2)
+def _get_transformer_pipeline(model_name: str):
     # Lazy import so local fallback dependency loads only when needed.
     from transformers import pipeline
 
+    return pipeline("summarization", model=model_name)
+
+
+def summarize_with_transformer(text: str, length: str, output_format: str) -> Dict[str, str]:
     model_name = os.getenv("HF_SUMMARIZER_MODEL", "facebook/bart-large-cnn")
-    summarizer = pipeline("summarization", model=model_name)
+    summarizer = _get_transformer_pipeline(model_name)
 
     tokenizer = summarizer.tokenizer
     model_config = summarizer.model.config
@@ -221,18 +257,32 @@ def summarize_with_transformer(text: str, length: str, output_format: str) -> Di
 
 
 def summarize_text(text: str, domain: str, length: str, output_format: str) -> Dict[str, str]:
+    providers = _get_provider_priority()
+    max_retries = max(1, int(os.getenv("LLM_MAX_RETRIES", "2")))
+    backoff_seconds = max(0.0, float(os.getenv("LLM_RETRY_BACKOFF_SECONDS", "0.8")))
+
+    llm_errors: List[str] = []
+    for provider in providers:
+        for attempt in range(1, max_retries + 1):
+            try:
+                return summarize_with_provider(
+                    provider=provider,
+                    text=text,
+                    domain=domain,
+                    length=length,
+                    output_format=output_format,
+                )
+            except Exception as error:
+                llm_errors.append(f"{provider} attempt {attempt}: {error}")
+                if attempt < max_retries and backoff_seconds > 0:
+                    time.sleep(backoff_seconds * attempt)
+
+    # Fall back to local transformer model only after all providers are exhausted.
     try:
-        return summarize_with_llm(
-            text=text,
-            domain=domain,
-            length=length,
-            output_format=output_format,
-        )
-    except Exception as llm_error:
-        # Fall back to local transformer model if the LLM provider is unavailable.
-        try:
-            return summarize_with_transformer(text=text, length=length, output_format=output_format)
-        except Exception as fallback_error:
-            raise RuntimeError(
-                "Summarization failed for both configured LLM provider and transformer fallback."
-            ) from fallback_error
+        return summarize_with_transformer(text=text, length=length, output_format=output_format)
+    except Exception as fallback_error:
+        error_details = "; ".join(llm_errors[-3:]) if llm_errors else "No provider errors captured."
+        raise RuntimeError(
+            "Summarization failed for all configured providers and transformer fallback. "
+            f"Recent provider errors: {error_details}"
+        ) from fallback_error

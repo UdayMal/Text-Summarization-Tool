@@ -1,0 +1,245 @@
+:root {
+  --bg-1: #f4efe8;
+  --bg-2: #d9efe8;
+  --ink: #1f2a24;
+  --ink-soft: #43554c;
+  --accent: #ca5f34;
+  --accent-2: #246d64;
+  --card: rgba(255, 255, 255, 0.78);
+  --border: rgba(31, 42, 36, 0.16);
+  --shadow: 0 24px 60px rgba(31, 42, 36, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  color: var(--ink);
+  background: linear-gradient(125deg, var(--bg-1), var(--bg-2));
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.bg-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(4px);
+  opacity: 0.45;
+  z-index: -1;
+}
+
+.orb-a {
+  width: 360px;
+  height: 360px;
+  background: radial-gradient(circle at 30% 30%, #ffd68f, #ca5f34);
+  top: -100px;
+  left: -90px;
+  animation: floatA 11s ease-in-out infinite;
+}
+
+.orb-b {
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(circle at 70% 30%, #8adac2, #246d64);
+  right: -140px;
+  bottom: -140px;
+  animation: floatB 14s ease-in-out infinite;
+}
+
+.container {
+  width: min(960px, 92vw);
+  margin: 2.5rem auto;
+  display: grid;
+  gap: 1.2rem;
+}
+
+.hero {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow);
+  animation: riseIn 700ms ease;
+}
+
+.tag {
+  display: inline-block;
+  margin: 0 0 0.45rem;
+  padding: 0.24rem 0.7rem;
+  border-radius: 999px;
+  background: #f9eadc;
+  color: #904527;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+h1,
+h2 {
+  margin: 0 0 0.6rem;
+}
+
+.hero p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1.2rem;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(2px);
+  animation: riseIn 700ms ease;
+}
+
+label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+
+textarea,
+select,
+button {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font: inherit;
+}
+
+textarea,
+select {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+}
+
+textarea {
+  min-height: 220px;
+  resize: vertical;
+  padding: 0.85rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  font-family: "Source Serif 4", serif;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+select {
+  padding: 0.55rem 0.65rem;
+}
+
+button {
+  border: 0;
+  padding: 0.82rem 1rem;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  background: linear-gradient(100deg, var(--accent), #e17f4a);
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.output-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+#engine-badge {
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #0b5549;
+  background: #cff2e8;
+}
+
+#summary-text {
+  white-space: pre-wrap;
+  margin: 0;
+  color: #152520;
+  font-family: "Source Serif 4", serif;
+  line-height: 1.65;
+}
+
+.error {
+  border-color: rgba(158, 33, 33, 0.28);
+  background: rgba(255, 240, 240, 0.86);
+}
+
+#error-text {
+  margin: 0;
+  color: #902020;
+}
+
+@keyframes riseIn {
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes floatA {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(12px) translateX(8px);
+  }
+}
+
+@keyframes floatB {
+  0%,
+  100% {
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    transform: translateY(-10px) translateX(-10px);
+  }
+}
+
+@media (max-width: 800px) {
+  .container {
+    margin: 1.2rem auto 2rem;
+    gap: 0.9rem;
+  }
+
+  .controls-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero,
+  .panel {
+    border-radius: 16px;
+  }
+
+  textarea {
+    min-height: 180px;
+  }
+}

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GPT-4 Domain Summarizer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Source+Serif+4:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  </head>
+  <body>
+    <div class="bg-orb orb-a"></div>
+    <div class="bg-orb orb-b"></div>
+    <main class="container">
+      <header class="hero">
+        <p class="tag">Transformer + GPT-4</p>
+        <h1>Domain-Aware Text Summarization</h1>
+        <p>
+          Paste lengthy text, choose domain context, and generate a concise summary
+          tuned for your use case.
+        </p>
+      </header>
+
+      <section class="panel">
+        <form id="summarize-form">
+          <label for="input-text">Document Text</label>
+          <textarea
+            id="input-text"
+            name="text"
+            placeholder="Paste your document content here..."
+            minlength="30"
+            required
+          ></textarea>
+
+          <div class="controls-grid">
+            <div>
+              <label for="domain">Domain</label>
+              <select id="domain" name="domain">
+                <option value="general">General</option>
+                <option value="technical">Technical</option>
+                <option value="legal">Legal</option>
+                <option value="medical">Medical</option>
+                <option value="finance">Finance</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="length">Summary Length</label>
+              <select id="length" name="length">
+                <option value="short">Short</option>
+                <option value="medium" selected>Medium</option>
+                <option value="detailed">Detailed</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="format">Output Format</label>
+              <select id="format" name="format">
+                <option value="paragraph" selected>Paragraph</option>
+                <option value="bullet">Bullet Points</option>
+              </select>
+            </div>
+          </div>
+
+          <button id="submit-btn" type="submit">Generate Summary</button>
+        </form>
+      </section>
+
+      <section class="panel output" id="output-panel" hidden>
+        <div class="output-head">
+          <h2>Summary</h2>
+          <span id="engine-badge"></span>
+        </div>
+        <pre id="summary-text"></pre>
+      </section>
+
+      <section class="panel error" id="error-panel" hidden>
+        <h2>Something went wrong</h2>
+        <p id="error-text"></p>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>

@@ -112,7 +112,8 @@ Response JSON:
 }
 ```
 
-## Screenshots
-![alt text](image.png)
+## Working Screenshots
 
 ![alt text](image-1.png)
+
+![alt text](image-2.png)
